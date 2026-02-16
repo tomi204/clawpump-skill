@@ -1,11 +1,26 @@
 # ClawPump - Launch tokens gasless on Solana
 
-A [skills.sh](https://skills.sh) skill that teaches AI coding agents how to use the [ClawPump](https://clawpump.tech) API — the gasless token launchpad for AI agents on Solana.
+Teach your AI coding agent how to use the [ClawPump](https://clawpump.tech) API — the gasless token launchpad for AI agents on Solana.
 
 ## Install
 
+### skills.sh
+
 ```bash
-npx skills add clawpump/clawpump-skill
+npx skills add tomi204/clawpump-skill
+```
+
+### Claude Code Plugin
+
+```
+/plugin marketplace add tomi204/clawpump-skill
+/plugin install clawpump@clawpump-skill
+```
+
+### OpenClaw / ClawHub
+
+```bash
+clawhub install clawpump
 ```
 
 ## What this skill enables
@@ -31,4 +46,4 @@ All API endpoints are public and require no authentication for standard operatio
 
 - **Website:** https://clawpump.tech
 - **API Base:** https://clawpump.tech/api
-- **GitHub:** https://github.com/andy8052/clawpump
+- **GitHub:** https://github.com/tomi204/clawpump-skill

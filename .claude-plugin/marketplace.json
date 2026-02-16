@@ -1,0 +1,21 @@
+{
+  "name": "clawpump-skill",
+  "owner": {
+    "name": "ClawPump"
+  },
+  "metadata": {
+    "description": "ClawPump API skill for AI coding agents — gasless token launches on Solana"
+  },
+  "plugins": [
+    {
+      "name": "clawpump",
+      "source": ".",
+      "description": "Launch tokens gasless on Solana via ClawPump. Swap tokens, scan cross-DEX arbitrage, check earnings, and more.",
+      "version": "1.0.0",
+      "homepage": "https://clawpump.tech",
+      "repository": "https://github.com/tomi204/clawpump-skill",
+      "keywords": ["solana", "token", "launch", "pump.fun", "swap", "arbitrage", "defi"],
+      "category": "blockchain"
+    }
+  ]
+}
