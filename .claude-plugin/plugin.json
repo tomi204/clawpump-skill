@@ -1,6 +1,6 @@
 {
-  "name": "clawpump",
-  "description": "Launch tokens gasless on Solana via ClawPump. Swap tokens, scan cross-DEX arbitrage, check earnings, and more.",
+  "name": "solana-token-launcher",
+  "description": "Create and launch Solana tokens gasless on pump.fun. Swap SPL tokens via Jupiter. Scan cross-DEX arbitrage on Raydium, Orca, Meteora. Full Solana DeFi toolkit for AI agents — powered by ClawPump.",
   "version": "1.0.0",
   "author": {
     "name": "ClawPump"
@@ -8,5 +8,5 @@
   "homepage": "https://clawpump.tech",
   "repository": "https://github.com/tomi204/clawpump-skill",
   "license": "MIT",
-  "keywords": ["solana", "token", "launch", "pump.fun", "swap", "arbitrage", "defi"]
+  "keywords": ["solana", "token", "launch", "pump.fun", "swap", "arbitrage", "defi", "jupiter", "raydium", "orca", "spl-token", "blockchain", "web3"]
 }

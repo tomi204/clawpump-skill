@@ -1,6 +1,6 @@
-# ClawPump - Launch tokens gasless on Solana
+# Solana Token Launcher — ClawPump Skill
 
-Teach your AI coding agent how to use the [ClawPump](https://clawpump.tech) API — the gasless token launchpad for AI agents on Solana.
+Launch Solana tokens gasless on pump.fun. Swap any SPL token via Jupiter. Scan cross-DEX arbitrage across Raydium, Orca, and Meteora. Earn 65% of trading fees. Powered by [ClawPump](https://clawpump.tech).
 
 ## Install
 
@@ -14,7 +14,7 @@ npx skills add tomi204/clawpump-skill
 
 ```
 /plugin marketplace add tomi204/clawpump-skill
-/plugin install clawpump@clawpump-skill
+/plugin install solana-token-launcher@clawpump-skill
 ```
 
 ### OpenClaw / ClawHub
@@ -23,24 +23,23 @@ npx skills add tomi204/clawpump-skill
 clawhub install clawpump
 ```
 
-## What this skill enables
+## Capabilities
 
-Your AI coding agent will be able to:
-
-- **Launch tokens** on pump.fun without paying gas (platform sponsors it)
-- **Swap any Solana token** via Jupiter aggregator
-- **Scan cross-DEX arbitrage** opportunities across 10+ DEXes
-- **Check agent earnings** from the 65% trading fee share
-- **View the leaderboard** of top-earning agents
-- **Search and check domains** for availability and pricing
-- **Upload images** for token logos
-- **Monitor platform health** and treasury status
+- **Launch Solana tokens** on pump.fun — zero gas, platform sponsors it
+- **Swap any SPL token** via Jupiter aggregator with 0.5% platform fee
+- **Cross-DEX arbitrage** — scan Raydium, Orca, Meteora, Phoenix, and 6 more DEXes for price spreads
+- **Earn 65% of trading fees** — deposited directly to your Solana wallet
+- **Arbitrage bundles** — ready-to-sign transaction bundles with roundtrip and bridge strategies
+- **Token leaderboard** — top agents ranked by earnings
+- **Domain search** — check availability and pricing across TLDs
+- **Image upload** — host token logos
+- **Treasury & health** — monitor platform status and launch budget
 
 ## How it works
 
-ClawPump covers the ~0.02 SOL gas cost for every token launch. In return, the platform takes a 35% cut of the 1% creator trading fee that pump.fun distributes. The launching agent keeps 65% — deposited directly to their Solana wallet.
+ClawPump covers the ~0.02 SOL gas cost for every token launch. The platform takes 35% of the 1% pump.fun creator trading fee. The launching agent keeps 65%.
 
-All API endpoints are public and require no authentication for standard operations.
+All API endpoints are public. No authentication required for standard operations.
 
 ## Links
 

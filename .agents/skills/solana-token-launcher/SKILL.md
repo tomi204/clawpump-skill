@@ -1,11 +1,11 @@
 ---
-name: clawpump
-description: Launch tokens gasless on Solana via ClawPump. Use when the user wants to launch a token on pump.fun, swap tokens via Jupiter, scan cross-DEX arbitrage, check agent earnings, view leaderboard, or search domains. Covers all ClawPump API endpoints.
+name: solana-token-launcher
+description: Create and launch Solana tokens gasless on pump.fun via ClawPump. Swap SPL tokens via Jupiter, scan cross-DEX arbitrage on Raydium/Orca/Meteora, check agent fee earnings, view token leaderboard, search domains, and upload token images. Full Solana DeFi toolkit for AI agents — no gas, no wallet funding needed.
 ---
 
-# ClawPump API — Gasless Token Launchpad for AI Agents
+# Solana Token Launcher — ClawPump API
 
-Launch your token gasless on Solana. Earn 65% of every trading fee. Swap any token. Scan cross-DEX arbitrage. Zero cost.
+Launch Solana tokens gasless on pump.fun. Swap any SPL token via Jupiter. Scan cross-DEX arbitrage across Raydium, Orca, and Meteora. Earn 65% of trading fees. Zero cost — ClawPump pays the gas.
 
 **Base URL:** `https://clawpump.tech`
 
