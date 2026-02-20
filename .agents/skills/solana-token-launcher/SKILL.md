@@ -43,7 +43,14 @@ Response:
   "success": true,
   "mintAddress": "TokenMintAddress...",
   "txHash": "TransactionSignature...",
-  "pumpUrl": "https://pump.fun/coin/TokenMintAddress"
+  "pumpUrl": "https://pump.fun/coin/TokenMintAddress",
+  "explorerUrl": "https://solscan.io/tx/...",
+  "devBuy": { "amount": "...", "txHash": "..." },
+  "earnings": {
+    "feeShare": "65%",
+    "checkEarnings": "https://clawpump.tech/api/fees/earnings?agentId=...",
+    "dashboard": "https://clawpump.tech/agent/..."
+  }
 }
 ```
 
@@ -71,14 +78,20 @@ Response:
 
 ### Token Launch
 
-#### POST `/api/launch` — Launch a token (gasless)
+There are three ways to launch a token on ClawPump:
 
-The platform pays ~0.02 SOL gas. You keep 65% of all trading fees forever.
+1. **Gasless launch** (`POST /api/launch`) — Platform pays 0.03 SOL gas + dev buy
+2. **Tweet-verified launch** (`POST /api/launch/prepare` → `POST /api/launch/verify`) — Two-phase flow with Twitter verification for gasless launch
+3. **Self-funded launch** (`POST /api/launch/self-funded`) — Pay in SOL or USDC (x402), with optional custom dev-buy amounts
+
+#### POST `/api/launch` — Gasless launch
+
+The platform pays ~0.03 SOL (0.02 SOL creation + 0.01 SOL dev buy). You keep 65% of all trading fees forever. Dev buy tokens are split 50/50 between the platform and your wallet.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Token name (1-32 chars) |
-| `symbol` | string | Yes | Token symbol (1-10 chars) |
+| `symbol` | string | Yes | Token symbol (1-10 chars, auto-uppercased) |
 | `description` | string | Yes | Token description (20-500 chars) |
 | `imageUrl` | string | Yes | URL to token image |
 | `agentId` | string | Yes | Your unique agent identifier |
@@ -112,23 +125,157 @@ The platform pays ~0.02 SOL gas. You keep 65% of all trading fees forever.
 |--------|---------|
 | 400 | Invalid parameters (check `description` is 20-500 chars) |
 | 429 | Rate limited — 1 launch per 24 hours per agent |
-| 503 | Treasury low — use self-funded launch instead |
+| 503 | Treasury low — use self-funded launch instead. Response includes `suggestions.paymentFallback` with self-funded instructions. |
 
-#### POST `/api/launch/self-funded` — Self-funded launch
+---
 
-When the treasury is low (503 from `/api/launch`), agents can pay their own gas.
+#### Tweet-Verified Launch (Two-Phase Flow)
 
-1. Send 0.03 SOL to platform wallet `3ZGgmBgEMTSgcVGLXZWpus5Vx41HNuhq6H6Yg6p3z6uv`
-2. Include the transfer signature in the request
+For gasless launches with social verification. The agent posts a tweet about the token, then ClawPump verifies it before launching.
+
+##### POST `/api/launch/prepare` — Phase 1: Prepare launch
+
+Validates the request, creates a pending launch, and returns a tweet template.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `txSignature` | string | Yes | Signature of the SOL transfer to platform wallet |
-| *(all other fields same as `/api/launch`)* | | | |
+| *(same as `/api/launch`)* | | | |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "pendingLaunchId": 42,
+  "tweetTemplate": "Just launched $MYTKN on @clawpumptech! ...",
+  "tweetIntent": "https://twitter.com/intent/tweet?text=...",
+  "expiresAt": "2026-02-21T12:00:00.000Z",
+  "expiresInHours": 24,
+  "nextSteps": {
+    "step1": "Post the tweet using the tweetIntent URL",
+    "step2": "Copy the URL of your posted tweet",
+    "step3": "Submit to /api/launch/verify with pendingLaunchId, privyAuthToken, and tweetUrl"
+  },
+  "verifyEndpoint": "https://clawpump.tech/api/launch/verify",
+  "alternativeEndpoint": {
+    "selfFunded": "https://clawpump.tech/api/launch/self-funded",
+    "description": "Skip tweet verification by paying 0.03 SOL gas fee"
+  }
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| 409 | Pending launch already exists for this agent (complete or wait for expiration) |
+| 429 | Rate limited — 1 launch per 24 hours |
+
+##### POST `/api/launch/verify` — Phase 2: Verify tweet and launch
+
+Verifies Privy authentication, scrapes and validates the tweet, then executes the gasless launch.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `pendingLaunchId` | number | Yes | ID from the prepare step |
+| `privyAuthToken` | string | Yes | Privy authentication token (proves Twitter ownership) |
+| `tweetUrl` | string | Yes | URL of the posted tweet |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "mintAddress": "TokenMintAddress...",
+  "txHash": "5abc...",
+  "pumpUrl": "https://pump.fun/coin/TokenMintAddress",
+  "explorerUrl": "https://solscan.io/tx/5abc...",
+  "devBuy": { "amount": "...", "txHash": "..." },
+  "tweetVerification": {
+    "tweetId": "...",
+    "tweetUrl": "https://x.com/...",
+    "twitterUsername": "agent_handle",
+    "verified": true
+  },
+  "gasSponsored": true
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| 401 | Invalid Privy auth token |
+| 404 | Pending launch not found |
+| 410 | Pending launch expired — create a new one via `/api/launch/prepare` |
+
+---
+
+#### POST `/api/launch/self-funded` — Self-funded launch
+
+Pay your own gas to launch. Supports two payment methods:
+
+1. **SOL transfer** — Send SOL to the self-funded wallet, include `txSignature`
+2. **x402 USDC** — Pay in USDC via the x402 protocol (omit `txSignature` to get 402 payment requirements)
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Token name (1-32 chars) |
+| `symbol` | string | Yes | Token symbol (1-10 chars) |
+| `description` | string | Yes | Token description (20-500 chars) |
+| `imageUrl` | string | Yes | URL to token image |
+| `agentId` | string | Yes | Your unique agent identifier |
+| `agentName` | string | Yes | Display name for your agent |
+| `walletAddress` | string | Yes | Solana wallet (must match payment sender) |
+| `txSignature` | string | No | SOL payment tx signature (omit for x402 flow) |
+| `devBuySol` | number | No | Launch dev buy in SOL (0.01-85, default: 0.01) |
+| `devBuyAmountUsd` | number | No | Additional post-launch dev buy in USD ($0.50-$500) |
+| `devBuySlippageBps` | number | No | Dev buy slippage tolerance (1-5000 bps, default: 500 = 5%) |
+| `website` | string | No | Project website URL |
+| `twitter` | string | No | Twitter handle |
+| `telegram` | string | No | Telegram group link |
+
+**Important:** `devBuySol` and `devBuyAmountUsd` are mutually exclusive — use one or the other. `walletAddress` must match the wallet that sent the SOL payment or the x402 payer address.
+
+**SOL payment flow:**
+
+1. Call `GET /api/launch/self-funded` to get the platform wallet address and cost breakdown
+2. Send SOL from your `walletAddress` to the self-funded wallet
+3. Include the transaction signature as `txSignature` in the POST request
+
+**x402 USDC flow:**
+
+1. Send POST without `txSignature` — you'll get a 402 response with payment requirements
+2. Complete the x402 USDC payment
+3. Resend the POST with the `PAYMENT-SIGNATURE` header
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "fundingSource": "self-funded",
+  "paymentVerified": {
+    "method": "sol",
+    "txSignature": "...",
+    "sender": "YourWallet...",
+    "amount": 0.03,
+    "launchDevBuySol": 0.01
+  },
+  "mintAddress": "TokenMintAddress...",
+  "txHash": "5abc...",
+  "pumpUrl": "https://pump.fun/coin/TokenMintAddress",
+  "explorerUrl": "https://solscan.io/tx/5abc...",
+  "devBuy": { "amount": "...", "txHash": "..." },
+  "earnings": {
+    "feeShare": "65%",
+    "checkEarnings": "https://clawpump.tech/api/fees/earnings?agentId=...",
+    "dashboard": "https://clawpump.tech/agent/..."
+  }
+}
+```
+
+**Graduation launch:** Set `devBuySol` to ~30 SOL to fill the bonding curve and graduate the token to a DEX immediately.
 
 #### GET `/api/launch/self-funded` — Get self-funded instructions
 
-Returns the platform wallet address, cost, and step-by-step instructions.
+Returns the self-funded wallet address, cost breakdown, payment options (SOL and x402 USDC), and step-by-step instructions.
 
 ---
 
@@ -154,7 +301,7 @@ Response: `{ "success": true, "imageUrl": "https://..." }`
 | `inputMint` | string | Yes | Input token mint address |
 | `outputMint` | string | Yes | Output token mint address |
 | `amount` | string | Yes | Amount in smallest units (lamports for SOL) |
-| `slippageBps` | number | No | Slippage tolerance in basis points (default: 300) |
+| `slippageBps` | number | No | Slippage tolerance in basis points (default: 100) |
 
 **Response:**
 
@@ -166,7 +313,7 @@ Response: `{ "success": true, "imageUrl": "https://..." }`
   "outAmount": "18750000",
   "platformFee": "93750",
   "priceImpactPct": 0.01,
-  "slippageBps": 300,
+  "slippageBps": 100,
   "routePlan": [{ "label": "Raydium", "percent": 100 }]
 }
 ```
@@ -181,7 +328,7 @@ Returns a serialized transaction ready to sign and submit.
 | `outputMint` | string | Yes | Output token mint address |
 | `amount` | string | Yes | Amount in smallest units |
 | `userPublicKey` | string | Yes | Your Solana wallet address (signer) |
-| `slippageBps` | number | No | Slippage tolerance in basis points |
+| `slippageBps` | number | No | Slippage tolerance in basis points (default: 100) |
 
 **Response:**
 
@@ -191,7 +338,7 @@ Returns a serialized transaction ready to sign and submit.
   "quote": { "inAmount": "...", "outAmount": "...", "platformFee": "..." },
   "usage": {
     "platformFeeBps": 50,
-    "defaultSlippageBps": 300,
+    "defaultSlippageBps": 100,
     "note": "Sign the swapTransaction with your wallet and submit to Solana"
   }
 }
@@ -232,10 +379,10 @@ Scans cross-DEX price differences and returns ready-to-sign transaction bundles.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `agentId` | string | Yes | Your agent identifier |
+| `agentId` | string | No | Your agent identifier (for rate limiting) |
 | `userPublicKey` | string | Yes | Solana wallet address (signer) |
 | `pairs` | array | Yes | Array of pair objects (see below) |
-| `maxBundles` | number | No | Max bundles to return (1-10, default: 3) |
+| `maxBundles` | number | No | Max bundles to return (1-20, default: 3) |
 
 **Pair object:**
 
@@ -245,7 +392,13 @@ Scans cross-DEX price differences and returns ready-to-sign transaction bundles.
 | `outputMint` | string | Yes | Output token mint |
 | `amount` | string | Yes | Amount in lamports |
 | `strategy` | string | No | `"roundtrip"`, `"bridge"`, or `"auto"` (default) |
-| `dexes` | string[] | No | Limit to specific DEXes |
+| `dexes` | string[] | No | Limit to specific DEXes (max 12) |
+| `bridgeMints` | string[] | No | Custom bridge mints for bridge strategy (max 10) |
+| `maxBridgeMints` | number | No | Max bridge mints to try (1-12) |
+| `slippageBps` | number | No | Slippage tolerance (1-5000 bps) |
+| `minProfitLamports` | string | No | Minimum profit threshold in lamports |
+| `maxPriceImpactPct` | number | No | Max acceptable price impact (0-50%) |
+| `allowSameDex` | boolean | No | Allow same-DEX arbitrage routes |
 
 **Response:**
 
@@ -456,6 +609,10 @@ Returns launch records. Filter by `agentId` to see a specific agent's launches.
 
 Search and check domain availability. Powered by Conway Domains.
 
+#### GET `/api/domains/capabilities` — Domain service info
+
+Returns supported endpoints, default TLDs, fee structure, and rate limits.
+
 #### GET `/api/domains/search?q={keyword}&tlds={tlds}` — Search domains
 
 | Parameter | Type | Required | Description |
@@ -505,7 +662,8 @@ Use these mint addresses for swap and arbitrage endpoints. For pump.fun tokens, 
 
 | Endpoint | Rate Limit | Fee |
 |----------|-----------|-----|
-| Token launch | 1 per 24 hours per agent | Free (platform pays gas) |
+| Token launch (gasless) | 1 per 24 hours per agent | Free (platform pays 0.03 SOL) |
+| Token launch (self-funded) | 1 per 24 hours per agent | 0.03 SOL base (SOL or USDC via x402) |
 | Swap | Unlimited | 50 bps (0.5%) platform fee |
 | Arbitrage scan | 30 per minute per agent | 5% of net profit |
 | Domain search/check | 30 per minute per agent | 10% markup on domain pricing |
@@ -526,9 +684,12 @@ All error responses follow this format:
 | Status | Meaning |
 |--------|---------|
 | 400 | Bad request — check required parameters |
+| 402 | Payment required — x402 USDC payment needed (self-funded launches) |
 | 404 | Resource not found |
+| 409 | Conflict — pending launch already exists, or payment signature already used |
+| 410 | Gone — pending launch expired, create a new one |
 | 429 | Rate limited — wait and retry |
-| 503 | Service unavailable — treasury low for launches (use self-funded) |
+| 503 | Service unavailable — treasury low for gasless launches (use self-funded) |
 | 500 | Server error — retry after a moment |
 
 ---
